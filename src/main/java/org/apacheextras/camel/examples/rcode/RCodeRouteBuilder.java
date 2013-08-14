@@ -14,7 +14,14 @@ public class RCodeRouteBuilder extends RouteBuilder {
 
   @Override
   public void configure() throws Exception {
-    throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    configureCsvRoute();
+  }
+  
+  private void configureCsvRoute() {
+    // TODO: Configure this route with meaningfull parameters
+    from("file://")
+        .marshal().csv()
+        .to("mock://testEndoint");
   }
   
 }
