@@ -7,6 +7,7 @@ package org.apacheextras.camel.examples.rcode;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.dataformat.csv.CsvDataFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +25,10 @@ public class RCodeRouteBuilder extends RouteBuilder {
   }
 
   private void configureCsvRoute() {
+    CsvDataFormat csv = new CsvDataFormat();
+    csv.setDelimiter(";");
+    csv.setSkipFirstLine(true);
+
     String path = System.getProperty("user.dir");
     String url = "file://" + path + "/src/main/resources/data?noop=TRUE";
     from(url)
@@ -34,7 +39,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
           }
         })
         .log("Unmarshalling CSV file.")
-        .unmarshal().csv()
+        .unmarshal(csv)
         .to("log:CSV?level=INFO");
   }
 }
