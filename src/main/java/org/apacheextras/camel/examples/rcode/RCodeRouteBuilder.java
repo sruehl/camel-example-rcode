@@ -4,7 +4,6 @@
  */
 package org.apacheextras.camel.examples.rcode;
 
-import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.Processor;
