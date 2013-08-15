@@ -6,6 +6,7 @@ package org.apacheextras.camel.examples.rcode;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.dataformat.csv.CsvDataFormat;
@@ -46,6 +47,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
             })
             .log("Unmarshalling CSV file.")
             .unmarshal(csv)
-            .to("log:CSV?level=INFO");
+            .to("log:CSV?level=INFO")
+            .log(LoggingLevel.TRACE, "Finished a run");
   }
 }
