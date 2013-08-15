@@ -49,8 +49,9 @@ public class RCodeRouteBuilder extends RouteBuilder {
             .to("log:CSV?level=INFO")
             .split()
               .body()
-              .parallelProcessing()
-              .to("log:CSV?level=INFO")
+              .to("log:CSV?level=TRACE")
+              .setBody(simple("${body[1]}"))
+              .to("log:CSV?level=TRACE")
             .end()
             .log(LoggingLevel.INFO, "Finished a run");
   }
