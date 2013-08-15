@@ -20,7 +20,9 @@ import org.apache.camel.impl.DefaultCamelContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Console;
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -28,36 +30,20 @@ import java.io.File;
  */
 public class RCodeRunner {
 
-  private final static Logger LOGGER = LoggerFactory.getLogger(RCodeRunner.class);
-  private CamelContext camelContext;
-  private RCodeRouteBuilder routeBuilder = null;
+  public static void main(String... args) throws Exception {
+    CamelContext camelContext = new DefaultCamelContext();
+    File basePath = args.length > 0 ? new File(args[0]) : new File(System.getProperty("user.dir") + "/data");
 
-  public RCodeRunner() {
-    try {
-      initializeContext();
-    } catch (Exception ex) {
-      LOGGER.error("Unable to initialize context: {}", ex.getMessage());
-    }
-  }
+    camelContext.addRoutes(new RCodeRouteBuilder(basePath));
 
-  private void initializeContext() throws Exception {
-    routeBuilder = new RCodeRouteBuilder(new File(System.getProperty("user.dir") + "./rcode-example/data"));
-    camelContext = new DefaultCamelContext();
-    camelContext.addRoutes(routeBuilder);
     camelContext.start();
-  }
-
-  @Override
-  protected void finalize() throws Throwable {
+    Console console = System.console();
+    if (console != null) {
+      console.printf("Please press enter to shutdown route.");
+      console.readLine();
+    } else {
+      TimeUnit.SECONDS.sleep(5);
+    }
     camelContext.stop();
-    super.finalize();
-  }
-
-  public static void main(String... args) throws InterruptedException, Throwable {
-    LOGGER.info("Starting RCodeRunner.");
-    RCodeRunner rCodeRunner = new RCodeRunner();
-    Thread.sleep(1000);
-    LOGGER.info("Stopping RCodeRunner.");
-    rCodeRunner.finalize();
   }
 }
