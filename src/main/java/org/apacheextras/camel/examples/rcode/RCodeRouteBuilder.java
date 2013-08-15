@@ -48,6 +48,11 @@ public class RCodeRouteBuilder extends RouteBuilder {
             .log("Unmarshalling CSV file.")
             .unmarshal(csv)
             .to("log:CSV?level=INFO")
-            .log(LoggingLevel.TRACE, "Finished a run");
+            .split()
+              .body()
+              .parallelProcessing()
+              .to("log:CSV?level=INFO")
+            .end()
+            .log(LoggingLevel.INFO, "Finished a run");
   }
 }
