@@ -23,22 +23,8 @@ public class RCodeRouteBuilder extends RouteBuilder {
 
   private File basePath;
 
-  public RCodeRouteBuilder() {
-    defaulBasePath();
-  }
-
   public RCodeRouteBuilder(File basePath) {
     this.basePath = basePath;
-  }
-
-  public RCodeRouteBuilder(CamelContext context) {
-    super(context);
-    defaulBasePath();
-  }
-
-  private void defaulBasePath() {
-    String path = System.getProperty("user.dir");
-    basePath = new File(path + "./rcode-example/data");
   }
 
   @Override

@@ -20,6 +20,8 @@ import org.apache.camel.impl.DefaultCamelContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+
 /**
  *
  * @author cemmersb
@@ -39,7 +41,7 @@ public class RCodeRunner {
   }
 
   private void initializeContext() throws Exception {
-    routeBuilder = new RCodeRouteBuilder();
+    routeBuilder = new RCodeRouteBuilder(new File(System.getProperty("user.dir") + "./rcode-example/data"));
     camelContext = new DefaultCamelContext();
     camelContext.addRoutes(routeBuilder);
     camelContext.start();

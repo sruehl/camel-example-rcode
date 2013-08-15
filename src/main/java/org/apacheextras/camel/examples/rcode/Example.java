@@ -14,11 +14,10 @@ public class Example {
 
   public static void main(String... args) throws Exception {
     CamelContext camelContext = new DefaultCamelContext();
-    if (args.length > 0) {
-      camelContext.addRoutes(new RCodeRouteBuilder(new File(args[0])));
-    } else {
-      camelContext.addRoutes(new RCodeRouteBuilder());
-    }
+    File basePath = args.length > 0 ? new File(args[0]) : new File(System.getProperty("user.dir") + "./rcode-example/data");
+
+    camelContext.addRoutes(new RCodeRouteBuilder(basePath));
+
     camelContext.start();
     Console console = System.console();
     if (console != null) {
