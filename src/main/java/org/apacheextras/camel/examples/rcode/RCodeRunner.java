@@ -30,7 +30,7 @@ public class RCodeRunner {
 
   public static void main(String... args) throws Exception {
     CamelContext camelContext = new DefaultCamelContext();
-    File basePath = args.length > 0 ? new File(args[0]) : new File(System.getProperty("user.dir") + "/data");
+    File basePath = args.length > 0 ? new File(args[0]) : new File(System.getProperty("user.home") + "/data");
 
     camelContext.addRoutes(new RCodeRouteBuilder(basePath));
 
