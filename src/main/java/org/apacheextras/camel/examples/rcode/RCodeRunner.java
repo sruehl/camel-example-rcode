@@ -17,8 +17,6 @@ package org.apacheextras.camel.examples.rcode;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.impl.DefaultCamelContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Console;
 import java.io.File;
