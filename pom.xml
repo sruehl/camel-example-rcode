@@ -28,6 +28,16 @@
       <version>2.12-SNAPSHOT</version>
     </dependency>
     <dependency>
+      <groupId>org.nuiton.thirdparty</groupId>
+      <artifactId>REngine</artifactId>
+      <version>0.6-1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.nuiton.thirdparty</groupId>
+      <artifactId>Rserve</artifactId>
+      <version>0.6-1</version>
+    </dependency>
+    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
       <version>1.6.6</version>

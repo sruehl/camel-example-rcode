@@ -40,7 +40,7 @@ public class RCodeRunner {
       console.printf("Please press enter to shutdown route.");
       console.readLine();
     } else {
-      TimeUnit.SECONDS.sleep(5);
+      TimeUnit.SECONDS.sleep(30);
     }
     camelContext.stop();
   }
