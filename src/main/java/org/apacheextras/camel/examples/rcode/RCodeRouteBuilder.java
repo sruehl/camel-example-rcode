@@ -11,6 +11,7 @@ import org.apache.camel.Property;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.file.FileComponent;
 import org.apache.camel.dataformat.csv.CsvDataFormat;
+import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +38,20 @@ public class RCodeRouteBuilder extends RouteBuilder {
   public void configure() throws Exception {
     configureCsvRoute();
     configureRCodeRoute();
+    configureGraphRoute();
+    wireRoutes();
   }
+
+  /**
+   * Takes an input as bytes and writes it as an jpeg file.
+   */
+  private void configureGraphRoute() {
+    from("direct:graph")
+        .setHeader(Exchange.FILE_NAME, simple("graph${exchangeId}.jpeg"))
+        .to("file://" + basePath.getParent() + "/output")
+        .log("Generated graph file: " + basePath.getParent() + "/graph${exchangeId}.jpeg");
+  }
+
 
   /**
    * Takes an incoming string argument containing monthly quantities and
@@ -49,11 +63,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
         .to("log://command?level=DEBUG")
         .to("rcode://localhost:6311/parse_and_eval?bufferSize=4194304")
         .to("log://r_output?level=INFO")
-        .setBody(simple("${body.asBytes}"))
-        .setHeader(Exchange.FILE_NAME, simple("graph${exchangeId}.jpeg"))
-        .to("file://" + basePath.getParent() + "/output")
-        .log("Generated graph file: " + basePath.getParent() + "/graph${exchangeId}.jpeg");
-
+        .setBody(simple("${body.asBytes}"));
   }
 
   /**
@@ -78,9 +88,14 @@ public class RCodeRouteBuilder extends RouteBuilder {
         .to("log://CSV?level=DEBUG")
             // Now we aggregate the retrived contents in a big string
         .aggregate(header("id"), new ConcatenateAggregationStrategy()).completionTimeout(3000)
-        //TODO: seperate connection from route logic...
-        .to("direct://rcode")
-        .log(LoggingLevel.INFO, "Finished the unmarshaling");
-    // TODO: End the route with a meaningfull endpoint rather than logging
+        .log(LoggingLevel.INFO, "Finished the unmarshaling")
+        .to("direct:CSV_sink");
+  }
+
+  /**
+   * Wires together the routes.
+   */
+  private void wireRoutes() {
+    from("direct:CSV_sink").to("direct:rcode").to("direct:graph");
   }
 }
