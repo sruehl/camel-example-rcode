@@ -9,6 +9,7 @@ import org.apache.camel.LoggingLevel;
 import org.apache.camel.Processor;
 import org.apache.camel.Property;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.component.file.FileComponent;
 import org.apache.camel.dataformat.csv.CsvDataFormat;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.slf4j.Logger;
@@ -17,11 +18,15 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 
 /**
- * @author cemmersb
+ * @author cemmersb, Sebastian Rühl
  */
 public class RCodeRouteBuilder extends RouteBuilder {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(RCodeRouteBuilder.class);
+  private final static String DEVICE_COMMAND = "jpeg('${exchangeId}.jpg',quality=90);";
+  private final static String PLOT_COMMAND = "plot(quantity, type=\"l\");";
+  private final static String RETRIEVE_PLOT_COMMAND = "r=readBin('${exchangeId}.jpg','raw',1024*1024); unlink('${exchangeId}.jpg'); r";
+  private final static String FINAL_COMMAND = DEVICE_COMMAND + PLOT_COMMAND + "dev.off();" + RETRIEVE_PLOT_COMMAND;
+
   private File basePath;
 
   public RCodeRouteBuilder(File basePath) {
@@ -39,17 +44,16 @@ public class RCodeRouteBuilder extends RouteBuilder {
    * generates an output graph.
    */
   private void configureRCodeRoute() {
-
-    final String command = "plot(quantity, type=\"l\");";
-
     from("direct:rcode")
-        .setBody(simple("quantity <- c(${body});\n" + command))
+        .setBody(simple("quantity <- c(${body});\n" + FINAL_COMMAND))
         .to("log://command?level=DEBUG")
         .to("rcode://localhost:6311/parse_and_eval?bufferSize=4194304")
-        .to("log://r_output?level=DEBUG")
-            // TODO: Write the output array coming from the REXPList into a file
-        .end()
-        .log(LoggingLevel.INFO, "Generated ");
+        .to("log://r_output?level=INFO")
+        .setBody(simple("${body.asBytes}"))
+        .setHeader(Exchange.FILE_NAME, simple("graph${exchangeId}.jpeg"))
+        .to("file://" + basePath.getParent() + "/output")
+        .log("Generated graph file: " + basePath.getParent() + "/graph${exchangeId}.jpeg");
+
   }
 
   /**
@@ -66,7 +70,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
         .log("Unmarshalling CSV file.")
         .unmarshal(csv)
         .to("log://CSV?level=DEBUG")
-        .setHeader("id", simple("exchangeId"))
+        .setHeader("id", simple("${exchangeId}"))
         .split().body()
         .to("log://CSV?level=DEBUG")
             // TODO: Create monthly based output instead of taking the yearly figures

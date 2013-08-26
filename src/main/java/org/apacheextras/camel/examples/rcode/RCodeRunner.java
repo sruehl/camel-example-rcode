@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  *
- * @author cemmersb
+ * @author cemmersb, Sebastian Rühl
  */
 public class RCodeRunner {
 
