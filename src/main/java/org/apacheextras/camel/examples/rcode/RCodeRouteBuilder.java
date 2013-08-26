@@ -71,19 +71,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
         .setBody(simple("${body[1]}"))
         .to("log://CSV?level=TRACE")
             // Now we aggregate the retrived contents in a big string
-        .aggregate(header("id"), new AggregationStrategy() {
-          @Override
-          public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
-            if (oldExchange == null) {
-              return newExchange;
-            }
-
-            String oldBody = oldExchange.getIn().getBody(String.class);
-            String newBody = newExchange.getIn().getBody(String.class);
-            oldExchange.getIn().setBody(oldBody + ", " + newBody);
-            return oldExchange;
-          }
-        }).completionTimeout(3000)
+        .aggregate(header("id"), new ConcatenateAggregationStrategy()).completionTimeout(3000)
         //TODO: seperate connection from route logic...
         .to("direct://rcode")
         .log(LoggingLevel.INFO, "Finished the unmarshaling");
