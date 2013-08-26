@@ -44,7 +44,9 @@ public class RCodeRouteBuilder extends RouteBuilder {
 
     from("direct:rcode")
         .setBody(simple("quantity <- c(${body});\n" + command))
+        .to("log://command?level=DEBUG")
         .to("rcode://localhost:6311/parse_and_eval?bufferSize=4194304")
+        .to("log://r_output?level=DEBUG")
             // TODO: Write the output array coming from the REXPList into a file
         .end()
         .log(LoggingLevel.INFO, "Generated ");
@@ -66,10 +68,10 @@ public class RCodeRouteBuilder extends RouteBuilder {
         .to("log://CSV?level=DEBUG")
         .setHeader("id", simple("exchangeId"))
         .split().body()
-        .to("log://CSV?level=TRACE")
+        .to("log://CSV?level=DEBUG")
             // TODO: Create monthly based output instead of taking the yearly figures
         .setBody(simple("${body[1]}"))
-        .to("log://CSV?level=TRACE")
+        .to("log://CSV?level=DEBUG")
             // Now we aggregate the retrived contents in a big string
         .aggregate(header("id"), new ConcatenateAggregationStrategy()).completionTimeout(3000)
         //TODO: seperate connection from route logic...
