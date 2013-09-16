@@ -6,15 +6,8 @@ package org.apacheextras.camel.examples.rcode;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
-import org.apache.camel.Processor;
-import org.apache.camel.Property;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.component.file.FileComponent;
 import org.apache.camel.dataformat.csv.CsvDataFormat;
-import org.apache.camel.model.RouteDefinition;
-import org.apache.camel.processor.aggregate.AggregationStrategy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 

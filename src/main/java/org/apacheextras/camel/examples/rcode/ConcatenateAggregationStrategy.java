@@ -2,7 +2,6 @@ package org.apacheextras.camel.examples.rcode;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
-import org.apache.camel.spi.AggregationRepository;
 
 /**
  * Takes the bodies and concatenate them comma separated or by whatever separator is supplied.
