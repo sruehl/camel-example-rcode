@@ -10,6 +10,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.dataformat.csv.CsvDataFormat;
 
 import java.io.File;
+import org.apache.camel.Processor;
 
 /**
  * @author cemmersb, Sebastian Rühl
@@ -20,7 +21,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
   private final static String PLOT_COMMAND = "plot(quantity, type=\"l\");";
   private final static String RETRIEVE_PLOT_COMMAND = "r=readBin('${exchangeId}.jpg','raw',1024*1024); unlink('${exchangeId}.jpg'); r";
   private final static String FINAL_COMMAND = DEVICE_COMMAND + PLOT_COMMAND + "dev.off();" + RETRIEVE_PLOT_COMMAND;
-
+  private final static String HTTP4_RS_CAL_ENDPOINT = "http4://kayaposoft.com/enrico/json/v1.0/";
   private File basePath;
 
   public RCodeRouteBuilder(File basePath) {
@@ -30,6 +31,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
   @Override
   public void configure() throws Exception {
     configureCsvRoute();
+    configureRsCalRoute();
     configureRCodeRoute();
     configureGraphRoute();
     wireRoutes();
@@ -44,7 +46,6 @@ public class RCodeRouteBuilder extends RouteBuilder {
         .to("file://" + basePath.getParent() + "/output")
         .log("Generated graph file: " + basePath.getParent() + "/graph${exchangeId}.jpeg");
   }
-
 
   /**
    * Takes an incoming string argument containing monthly quantities and
@@ -76,19 +77,31 @@ public class RCodeRouteBuilder extends RouteBuilder {
         .setHeader("id", simple("${exchangeId}"))
         .split().body()
         .to("log://CSV?level=DEBUG")
-            // TODO: Create monthly based output instead of taking the yearly figures
+        // TODO: Create monthly based output instead of taking the yearly figures
         .setBody(simple("${body[1]}"))
         .to("log://CSV?level=DEBUG")
-            // Now we aggregate the retrived contents in a big string
+        // Now we aggregate the retrived contents in a big string
         .aggregate(header("id"), new ConcatenateAggregationStrategy()).completionTimeout(3000)
         .log(LoggingLevel.INFO, "Finished the unmarshaling")
         .to("direct:CSV_sink");
+  }
+
+  private void configureRsCalRoute() {
+    from("direct:RS_CAL")
+        // Configure Query Parameters
+        .setHeader(Exchange.HTTP_QUERY, constant("action=getPublicHolidaysForYear&year=2012&country=ger&region=Bavaria"))
+        .to(HTTP4_RS_CAL_ENDPOINT)
+        .marshal().json()
+        .log(LoggingLevel.INFO, body().toString());
   }
 
   /**
    * Wires together the routes.
    */
   private void wireRoutes() {
-    from("direct:CSV_sink").to("direct:rcode").to("direct:graph");
+    from("direct:CSV_sink")
+        .enrich("direct:RS_CAL", new EnrichServiceResponseAggregationStrategy())
+        .to("direct:rcode")
+        .to("direct:graph");
   }
 }
