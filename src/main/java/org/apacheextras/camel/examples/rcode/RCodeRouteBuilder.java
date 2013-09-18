@@ -11,6 +11,8 @@ import org.apache.camel.dataformat.csv.CsvDataFormat;
 
 import java.io.File;
 import org.apache.camel.Processor;
+import org.apache.camel.model.dataformat.JsonLibrary;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author cemmersb, Sebastian Rühl
@@ -53,6 +55,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
    */
   private void configureRCodeRoute() {
     from("direct:rcode")
+        //.setBody(simple("calendar <- c(${});\n"))
         .setBody(simple("quantity <- c(${body});\n" + FINAL_COMMAND))
         .to("log://command?level=DEBUG")
         .to("rcode://localhost:6311/parse_and_eval?bufferSize=4194304")
@@ -87,12 +90,30 @@ public class RCodeRouteBuilder extends RouteBuilder {
   }
 
   private void configureRsCalRoute() {
+
     from("direct:RS_CAL")
         // Configure Query Parameters
         .setHeader(Exchange.HTTP_QUERY, constant("action=getPublicHolidaysForYear&year=2012&country=ger&region=Bavaria"))
         .to(HTTP4_RS_CAL_ENDPOINT)
-        .marshal().json()
-        .log(LoggingLevel.INFO, body().toString());
+        .convertBodyTo(String.class)
+        .to("log://calendar?level=INFO")
+        .process(new Processor() {
+          @Override
+          public void process(Exchange exchange) throws Exception {
+            String body = exchange.getIn().getBody(String.class);
+            
+            String[] bodies = StringUtils.substringsBetween(body, "{\"date\":{\"", "\"},");
+            for (int i=0; i < bodies.length; i++) {
+              StringBuilder sb = new StringBuilder();
+              bodies[i] = sb.append("{\"date\":{\"").append(bodies[i]).append("\"}").toString();
+            }
+            
+            exchange.getIn().setBody(bodies);
+          }
+        })
+        .split(body())
+        .unmarshal().json(JsonLibrary.Gson)
+        .to("log://calendar?level=INFO");
   }
 
   /**

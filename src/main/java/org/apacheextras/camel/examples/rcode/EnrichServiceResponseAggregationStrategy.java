@@ -17,17 +17,29 @@ package org.apacheextras.camel.examples.rcode;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author cemmersb
  */
 public class EnrichServiceResponseAggregationStrategy implements AggregationStrategy {
-
+  
+  public static final String CALENDAR_SERVICE_RESPONSE = "CalendarServiceResponse";
+  
+  private static final Logger LOGGER = LoggerFactory.getLogger(EnrichServiceResponseAggregationStrategy.class);
+  
   @Override
   public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
-    final Object body = newExchange.getIn().getBody();
-    oldExchange.getIn().setHeader("SERVICE_RESPONSE", body);
+    final String oldBody = oldExchange.getIn().getBody(String.class);
+    final Object newBody = newExchange.getIn().getBody();
+    
+    LOGGER.debug("Mapping new exchange to oldExchange in Header");
+    
+    oldExchange.getIn().setHeader(CALENDAR_SERVICE_RESPONSE, newBody);
+    oldExchange.getIn().setBody(oldBody);
+    
     return oldExchange;
   }  
 }
