@@ -101,19 +101,20 @@ public class RCodeRouteBuilder extends RouteBuilder {
           @Override
           public void process(Exchange exchange) throws Exception {
             String body = exchange.getIn().getBody(String.class);
-            
+
             String[] bodies = StringUtils.substringsBetween(body, "{\"date\":{\"", "\"},");
-            for (int i=0; i < bodies.length; i++) {
+            for (int i = 0; i < bodies.length; i++) {
               StringBuilder sb = new StringBuilder();
               bodies[i] = sb.append("{\"date\":{\"").append(bodies[i]).append("\"}").toString();
             }
-            
+
             exchange.getIn().setBody(bodies);
-            
+
           }
         })
         .split(body())
         .unmarshal().json(JsonLibrary.Gson)
+        //.aggregate(new CalendarAgregationStrategy()).body().completionTimeout(3000)
         .to("log://calendar?level=INFO");
   }
 
