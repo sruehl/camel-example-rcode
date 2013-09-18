@@ -109,6 +109,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
             }
             
             exchange.getIn().setBody(bodies);
+            
           }
         })
         .split(body())
