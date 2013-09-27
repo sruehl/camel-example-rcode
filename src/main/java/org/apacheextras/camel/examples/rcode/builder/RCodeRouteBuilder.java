@@ -14,9 +14,7 @@ import org.apache.camel.dataformat.csv.CsvDataFormat;
 
 import java.io.File;
 import java.util.Date;
-import org.apache.camel.Processor;
 import org.apache.camel.model.dataformat.JsonLibrary;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author cemmersb, Sebastian Rühl
@@ -101,21 +99,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
         .to(HTTP4_RS_CAL_ENDPOINT)
         .convertBodyTo(String.class)
         .to("log://rest_calendar?level=INFO")
-        .process(new Processor() {
-          @Override
-          public void process(Exchange exchange) throws Exception {
-            String body = exchange.getIn().getBody(String.class);
-
-            String[] bodies = StringUtils.substringsBetween(body, "{\"date\":{\"", "\"},");
-            for (int i = 0; i < bodies.length; i++) {
-              StringBuilder sb = new StringBuilder();
-              bodies[i] = sb.append("{\"date\":{\"").append(bodies[i]).append("\"}").toString();
-            }
-
-            exchange.getIn().setBody(bodies);
-
-          }
-        })
+        .convertBodyTo(String[].class)
         .split().body()
         .unmarshal().json(JsonLibrary.Gson)
         .convertBodyTo(Date.class)
