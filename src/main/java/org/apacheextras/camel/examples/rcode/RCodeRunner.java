@@ -15,6 +15,7 @@
  */
 package org.apacheextras.camel.examples.rcode;
 
+import org.apacheextras.camel.examples.rcode.builder.RCodeRouteBuilder;
 import org.apache.camel.CamelContext;
 import org.apache.camel.impl.DefaultCamelContext;
 

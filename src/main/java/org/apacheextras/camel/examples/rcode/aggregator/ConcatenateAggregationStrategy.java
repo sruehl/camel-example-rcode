@@ -1,4 +1,4 @@
-package org.apacheextras.camel.examples.rcode;
+package org.apacheextras.camel.examples.rcode.aggregator;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.processor.aggregate.AggregationStrategy;

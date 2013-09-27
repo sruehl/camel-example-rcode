@@ -2,14 +2,18 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.apacheextras.camel.examples.rcode;
+package org.apacheextras.camel.examples.rcode.builder;
 
+import org.apacheextras.camel.examples.rcode.aggregator.CalendarAgregationStrategy;
+import org.apacheextras.camel.examples.rcode.aggregator.ConcatenateAggregationStrategy;
+import org.apacheextras.camel.examples.rcode.aggregator.EnrichServiceResponseAggregationStrategy;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.dataformat.csv.CsvDataFormat;
 
 import java.io.File;
+import javax.xml.crypto.Data;
 import org.apache.camel.Processor;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.commons.lang3.StringUtils;
@@ -46,7 +50,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
     from("direct:graph")
         .setHeader(Exchange.FILE_NAME, simple("graph${exchangeId}.jpeg"))
         .to("file://" + basePath.getParent() + "/output")
-        .log("Generated graph file: " + basePath.getParent() + "/graph${exchangeId}.jpeg");
+        .log("Generated graph file: " + simple("${header.CamelFileNameProduced}"));
   }
 
   /**
@@ -55,7 +59,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
    */
   private void configureRCodeRoute() {
     from("direct:rcode")
-        //.setBody(simple("calendar <- c(${});\n"))
+        //.setBody(simple("calendar <- c(${});\n")) Das muss sowieso wo anders passieren
         .setBody(simple("quantity <- c(${body});\n" + FINAL_COMMAND))
         .to("log://command?level=DEBUG")
         .to("rcode://localhost:6311/parse_and_eval?bufferSize=4194304")
@@ -112,9 +116,10 @@ public class RCodeRouteBuilder extends RouteBuilder {
 
           }
         })
-        .split(body())
+        .split().body()
         .unmarshal().json(JsonLibrary.Gson)
-        .aggregate(new CalendarAgregationStrategy()).body().completionTimeout(3000)
+        .convertBodyTo(Data.class)
+        .aggregate(header("id"), new CalendarAgregationStrategy()).completionTimeout(3000)
         .to("log://calendar?level=INFO");
   }
 
