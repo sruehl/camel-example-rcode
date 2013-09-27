@@ -13,7 +13,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.dataformat.csv.CsvDataFormat;
 
 import java.io.File;
-import javax.xml.crypto.Data;
+import java.util.Date;
 import org.apache.camel.Processor;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.commons.lang3.StringUtils;
@@ -95,12 +95,12 @@ public class RCodeRouteBuilder extends RouteBuilder {
 
   private void configureRestCalendarRoute() {
 
-    from("direct:RS_CAL")
+    from("direct:REST_CALENDAR")
         // Configure Query Parameters
         .setHeader(Exchange.HTTP_QUERY, constant("action=getPublicHolidaysForYear&year=2012&country=ger&region=Bavaria"))
         .to(HTTP4_RS_CAL_ENDPOINT)
         .convertBodyTo(String.class)
-        .to("log://calendar?level=INFO")
+        .to("log://rest_calendar?level=INFO")
         .process(new Processor() {
           @Override
           public void process(Exchange exchange) throws Exception {
@@ -118,9 +118,10 @@ public class RCodeRouteBuilder extends RouteBuilder {
         })
         .split().body()
         .unmarshal().json(JsonLibrary.Gson)
-        .convertBodyTo(Data.class)
+        .convertBodyTo(Date.class)
         .aggregate(header("id"), new CalendarAgregationStrategy()).completionTimeout(3000)
-        .to("log://calendar?level=INFO");
+        .to("log://date_calendar?level=INFO")
+        .end();
   }
 
   /**
@@ -128,7 +129,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
    */
   private void wireRoutes() {
     from("direct:CSV_sink")
-        .enrich("direct:RS_CAL", new EnrichServiceResponseAggregationStrategy())
+        .enrich("direct:REST_CALENDAR", new EnrichServiceResponseAggregationStrategy())
         .to("direct:rcode")
         .to("direct:graph");
   }
