@@ -34,16 +34,15 @@ public class CalendarAgregationStrategy implements AggregationStrategy {
   @Override
   public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
     List<LinkedHashMap> holidays = new LinkedList<LinkedHashMap>();
-    try {
+    
+    if(null != oldExchange) {
       holidays = oldExchange.getIn().getBody(List.class);
-    } catch(NullPointerException ex) {
-      LOGGER.info("Holidays do not exist, using new instance!");
     }
-
+        
     holidays.add(newExchange.getIn().getBody(LinkedHashMap.class));
     
-    oldExchange.getIn().setBody(holidays);
-    return oldExchange;
+    newExchange.getIn().setBody(holidays);
+    return newExchange;
   }
   
 }

@@ -33,7 +33,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
   @Override
   public void configure() throws Exception {
     configureCsvRoute();
-    configureRsCalRoute();
+    configureRestCalendarRoute();
     configureRCodeRoute();
     configureGraphRoute();
     wireRoutes();
@@ -89,7 +89,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
         .to("direct:CSV_sink");
   }
 
-  private void configureRsCalRoute() {
+  private void configureRestCalendarRoute() {
 
     from("direct:RS_CAL")
         // Configure Query Parameters
@@ -114,7 +114,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
         })
         .split(body())
         .unmarshal().json(JsonLibrary.Gson)
-        //.aggregate(new CalendarAgregationStrategy()).body().completionTimeout(3000)
+        .aggregate(new CalendarAgregationStrategy()).body().completionTimeout(3000)
         .to("log://calendar?level=INFO");
   }
 
