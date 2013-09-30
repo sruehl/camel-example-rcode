@@ -48,7 +48,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
     from("direct:graph")
         .setHeader(Exchange.FILE_NAME, simple("graph${exchangeId}.jpeg"))
         .to("file://" + basePath.getParent() + "/output")
-        .log("Generated graph file: " + simple("${header.CamelFileNameProduced}"));
+        .log("Generated graph file: ${header.CamelFileNameProduced}");
   }
 
   /**
