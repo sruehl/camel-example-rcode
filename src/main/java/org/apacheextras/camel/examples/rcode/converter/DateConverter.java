@@ -30,7 +30,7 @@ public class DateConverter {
     
     try {
       LOGGER.debug("Converting '{}' to Date object.", dateString);
-      return new SimpleDateFormat("yyyy-MM-dd").parse(dateString);
+      return new SimpleDateFormat("yyyy/MM/dd").parse(dateString);
     } catch (ParseException ex) {
       LOGGER.error("Could not parse the String to retrieve the Date object: {}", ex);
       return null;

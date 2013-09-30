@@ -103,8 +103,8 @@ public class RCodeRouteBuilder extends RouteBuilder {
         .to("log://rest_calendar?level=INFO")
         .unmarshal().json(JsonLibrary.Gson, List.class)
         .split().body()
-        .setBody(simple("${body[date][year]}/${body[date][month]}/${body[date][day]}"))
-        .convertBodyTo(Date.class)
+        .setBody(simple("${body[date][year]}/${body[date][month].intValue()}/${body[date][day].intValue()}"))
+        //.convertBodyTo(Date.class)
         .aggregate(header("id"), new CalendarAgregationStrategy()).completionTimeout(3000)
         .to("log://date_calendar?level=INFO")
         .end();

@@ -16,7 +16,6 @@
 package org.apacheextras.camel.examples.rcode.aggregator;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import org.apache.camel.Exchange;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
@@ -30,13 +29,13 @@ import org.slf4j.LoggerFactory;
 public class CalendarAgregationStrategy implements AggregationStrategy {
   
   private static final Logger LOGGER = LoggerFactory.getLogger(CalendarAgregationStrategy.class);
-  private List<Date> holidays = new ArrayList<Date>();
+  private List<String> holidays = new ArrayList<String>();
 
   @Override
   public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
     LOGGER.debug("Aggrgating the dates to generate a List of holidays.");
     
-    final Date date = newExchange.getIn().getBody(Date.class);
+    final String date = newExchange.getIn().getBody(String.class);
     
     if(null != oldExchange) {
       holidays = oldExchange.getIn().getBody(List.class);
