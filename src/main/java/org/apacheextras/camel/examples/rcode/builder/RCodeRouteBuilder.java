@@ -14,6 +14,8 @@ import org.apache.camel.dataformat.csv.CsvDataFormat;
 
 import java.io.File;
 import java.util.Date;
+import java.util.List;
+
 import org.apache.camel.model.dataformat.JsonLibrary;
 
 /**
@@ -99,9 +101,9 @@ public class RCodeRouteBuilder extends RouteBuilder {
         .to(HTTP4_RS_CAL_ENDPOINT)
         .convertBodyTo(String.class)
         .to("log://rest_calendar?level=INFO")
-        .convertBodyTo(String[].class)
+        .unmarshal().json(JsonLibrary.Gson, List.class)
         .split().body()
-        .unmarshal().json(JsonLibrary.Gson)
+        .setBody(simple("${body.date.year}/${body.date.month}/${body.date.day}"))
         .convertBodyTo(Date.class)
         .aggregate(header("id"), new CalendarAgregationStrategy()).completionTimeout(3000)
         .to("log://date_calendar?level=INFO")
