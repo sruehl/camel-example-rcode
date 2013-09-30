@@ -18,8 +18,7 @@ public class StringConverter {
   public String[] convertToJasonStringArray(String string) {
     String[] stringArray = StringUtils.substringsBetween(string, "{\"date\":{\"", "\"},");
     for (int i = 0; i < stringArray.length; i++) {
-      StringBuilder sb = new StringBuilder();
-      stringArray[i] = sb.append("{\"date\":{\"").append(stringArray[i]).append("\"}").toString();
+      stringArray[i] = "{\"date\":{\"" + stringArray[i]+ "\"}";
     }
     return stringArray;
   }

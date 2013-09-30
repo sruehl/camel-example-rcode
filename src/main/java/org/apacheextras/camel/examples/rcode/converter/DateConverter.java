@@ -24,22 +24,16 @@ public class DateConverter {
   
   @Converter
   public Date toDate(LinkedHashMap dateMap) {
-    final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
     final StringMap dsm = (StringMap) dateMap.get("date");
     
-    final StringBuilder sb = new StringBuilder()
-        .append(dsm.get("year"))
-        .append('-')
-        .append(((Double)dsm.get("month")).intValue())
-        .append('-')
-        .append(((Double)dsm.get("day")).intValue());
+    final String dateString = String.valueOf(dsm.get("year")) + '-' + ((Double) dsm.get("month")).intValue() + '-' + ((Double) dsm.get("day")).intValue();
     
     try {
-      LOGGER.debug("Converting '{}' to Date object.", sb.toString());
-      return sdf.parse(sb.toString());
+      LOGGER.debug("Converting '{}' to Date object.", dateString);
+      return new SimpleDateFormat("yyyy-MM-dd").parse(dateString);
     } catch (ParseException ex) {
       LOGGER.error("Could not parse the String to retrieve the Date object: {}", ex);
+      return null;
     }
-    return null;
-  } 
+  }
 }
