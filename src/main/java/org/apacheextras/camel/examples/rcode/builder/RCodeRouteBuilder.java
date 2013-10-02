@@ -11,19 +11,22 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.dataformat.csv.CsvDataFormat;
 
 import java.io.File;
+import org.apache.camel.Processor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author cemmersb, Sebastian Rühl
  */
 public class RCodeRouteBuilder extends RouteBuilder {
-
+  
+  private static final Logger LOGGER = LoggerFactory.getLogger(RCodeRouteBuilder.class);
   private final static String DEVICE_COMMAND = "jpeg('${exchangeId}.jpg',quality=90);";
   private final static String PLOT_COMMAND = "plot(quantity, type=\"l\");";
   private final static String RETRIEVE_PLOT_COMMAND = "r=readBin('${exchangeId}.jpg','raw',1024*1024); unlink('${exchangeId}.jpg'); r";
   private final static String FINAL_COMMAND = DEVICE_COMMAND + PLOT_COMMAND + "dev.off();" + RETRIEVE_PLOT_COMMAND;
   private final static String HTTP4_RS_CAL_ENDPOINT = "http4://kayaposoft.com/enrico/json/v1.0/";
   private File basePath;
-  
   private static final String DIRECT_CSV_SINK_URI = "direct://csv_sink";
   private static final String DIRECT_RCODE_SOURCE_URI = "direct://rcode_source";
   private static final String DIRECT_GRAPH_FILE_SOURCE_URI = "direct://graph_file_source";
@@ -32,21 +35,23 @@ public class RCodeRouteBuilder extends RouteBuilder {
   public RCodeRouteBuilder(File basePath) {
     this.basePath = basePath;
   }
-
+  
   @Override
   public void configure() throws Exception {
     configureCsvRoute();
     configureRCodeRoute();
     configureGraphFileRoute();
+    configureGraphJsonRoute();
     wireRoutes();
   }
   
   private void configureGraphJsonRoute() {
     // TODO: Export the binary file in a JSON rendert object and write to output folder
     from(DIRECT_GRAPH_JSON_SOURCE_URI)
-        .to("log://graph_json?level=INFO");
+        // TODO: missing JSON conversion implementation
+        .to("log://graph_json?level=INFO"); // prints currently some awkward byte code
   }
-  
+
   /**
    * Takes an input as bytes and writes it as an jpeg file.
    */
@@ -102,8 +107,9 @@ public class RCodeRouteBuilder extends RouteBuilder {
   private void wireRoutes() {
     from(DIRECT_CSV_SINK_URI)
         .to(DIRECT_RCODE_SOURCE_URI)
-        .to(DIRECT_GRAPH_FILE_SOURCE_URI);
-        // TODO: Add a route endpoint for JSON based report file
-        //.to(DIRECT_GRAPH_JSON_SOURCE_URI);
+        .multicast()
+        .to(DIRECT_GRAPH_FILE_SOURCE_URI, DIRECT_GRAPH_JSON_SOURCE_URI);
+    // TODO: Add a route endpoint for JSON based report file
+    //.to(DIRECT_GRAPH_JSON_SOURCE_URI);
   }
 }
