@@ -4,19 +4,13 @@
  */
 package org.apacheextras.camel.examples.rcode.builder;
 
-import org.apacheextras.camel.examples.rcode.aggregator.CalendarAgregationStrategy;
 import org.apacheextras.camel.examples.rcode.aggregator.ConcatenateAggregationStrategy;
-import org.apacheextras.camel.examples.rcode.aggregator.EnrichServiceResponseAggregationStrategy;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.dataformat.csv.CsvDataFormat;
 
 import java.io.File;
-import java.util.Date;
-import java.util.List;
-
-import org.apache.camel.model.dataformat.JsonLibrary;
 
 /**
  * @author cemmersb, Sebastian Rühl
@@ -29,7 +23,12 @@ public class RCodeRouteBuilder extends RouteBuilder {
   private final static String FINAL_COMMAND = DEVICE_COMMAND + PLOT_COMMAND + "dev.off();" + RETRIEVE_PLOT_COMMAND;
   private final static String HTTP4_RS_CAL_ENDPOINT = "http4://kayaposoft.com/enrico/json/v1.0/";
   private File basePath;
-
+  
+  private static final String DIRECT_CSV_SINK_URI = "direct://csv_sink";
+  private static final String DIRECT_RCODE_SOURCE_URI = "direct://rcode_source";
+  private static final String DIRECT_GRAPH_FILE_SOURCE_URI = "direct://graph_file_source";
+  private static final String DIRECT_GRAPH_JSON_SOURCE_URI = "direct://graph_json_source";
+  
   public RCodeRouteBuilder(File basePath) {
     this.basePath = basePath;
   }
@@ -37,17 +36,22 @@ public class RCodeRouteBuilder extends RouteBuilder {
   @Override
   public void configure() throws Exception {
     configureCsvRoute();
-    configureRestCalendarRoute();
     configureRCodeRoute();
-    configureGraphRoute();
+    configureGraphFileRoute();
     wireRoutes();
   }
-
+  
+  private void configureGraphJsonRoute() {
+    // TODO: Export the binary file in a JSON rendert object and write to output folder
+    from(DIRECT_GRAPH_JSON_SOURCE_URI)
+        .to("log://graph_json?level=INFO");
+  }
+  
   /**
    * Takes an input as bytes and writes it as an jpeg file.
    */
-  private void configureGraphRoute() {
-    from("direct:graph")
+  private void configureGraphFileRoute() {
+    from(DIRECT_GRAPH_FILE_SOURCE_URI)
         .setHeader(Exchange.FILE_NAME, simple("graph${exchangeId}.jpeg"))
         .to("file://" + basePath.getParent() + "/output")
         .log("Generated graph file: ${header.CamelFileNameProduced}");
@@ -58,8 +62,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
    * generates an output graph.
    */
   private void configureRCodeRoute() {
-    from("direct:rcode")
-        //.setBody(simple("calendar <- c(${});\n")) Das muss sowieso wo anders passieren
+    from(DIRECT_RCODE_SOURCE_URI)
         .setBody(simple("quantity <- c(${body});\n" + FINAL_COMMAND))
         .to("log://command?level=DEBUG")
         .to("rcode://localhost:6311/parse_and_eval?bufferSize=4194304")
@@ -84,39 +87,23 @@ public class RCodeRouteBuilder extends RouteBuilder {
         .setHeader("id", simple("${exchangeId}"))
         .split().body()
         .to("log://CSV?level=DEBUG")
-        // TODO: Create monthly based output instead of taking the yearly figures
+        // TODO: Do some number crunching to get monthly sales/demand figures
         .setBody(simple("${body[1]}"))
         .to("log://CSV?level=DEBUG")
         // Now we aggregate the retrived contents in a big string
         .aggregate(header("id"), new ConcatenateAggregationStrategy()).completionTimeout(3000)
         .log(LoggingLevel.INFO, "Finished the unmarshaling")
-        .to("direct:CSV_sink");
-  }
-
-  private void configureRestCalendarRoute() {
-
-    from("direct:REST_CALENDAR")
-        // Configure Query Parameters
-        .setHeader(Exchange.HTTP_QUERY, constant("action=getPublicHolidaysForYear&year=2012&country=ger&region=Bavaria"))
-        .to(HTTP4_RS_CAL_ENDPOINT)
-        .convertBodyTo(String.class)
-        .to("log://rest_calendar?level=INFO")
-        .unmarshal().json(JsonLibrary.Gson, List.class)
-        .split().body()
-        .setBody(simple("${body[date][year]}/${body[date][month].intValue()}/${body[date][day].intValue()}"))
-        //.convertBodyTo(Date.class)
-        .aggregate(header("id"), new CalendarAgregationStrategy()).completionTimeout(3000)
-        .to("log://date_calendar?level=INFO")
-        .end();
+        .to(DIRECT_CSV_SINK_URI);
   }
 
   /**
    * Wires together the routes.
    */
   private void wireRoutes() {
-    from("direct:CSV_sink")
-        .enrich("direct:REST_CALENDAR", new EnrichServiceResponseAggregationStrategy())
-        .to("direct:rcode")
-        .to("direct:graph");
+    from(DIRECT_CSV_SINK_URI)
+        .to(DIRECT_RCODE_SOURCE_URI)
+        .to(DIRECT_GRAPH_FILE_SOURCE_URI);
+        // TODO: Add a route endpoint for JSON based report file
+        //.to(DIRECT_GRAPH_JSON_SOURCE_URI);
   }
 }
