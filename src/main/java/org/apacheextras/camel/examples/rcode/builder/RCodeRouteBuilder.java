@@ -11,20 +11,41 @@ import org.apache.camel.dataformat.csv.CsvDataFormat;
 
 import java.io.File;
 import org.apacheextras.camel.examples.rcode.processor.MonthlySalesFigureCalcProcessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author cemmersb, Sebastian Rühl
  */
 public class RCodeRouteBuilder extends RouteBuilder {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(RCodeRouteBuilder.class);
-  private final static String DEVICE_COMMAND = "jpeg('${exchangeId}.jpg',quality=90);";
-  private final static String PLOT_COMMAND = "plot(quantity, type=\"l\");";
-  private final static String RETRIEVE_PLOT_COMMAND = "r=readBin('${exchangeId}.jpg','raw',1024*1024); unlink('${exchangeId}.jpg'); r";
-  private final static String FINAL_COMMAND = DEVICE_COMMAND + PLOT_COMMAND + "dev.off();" + RETRIEVE_PLOT_COMMAND;
-  private final static String HTTP4_RS_CAL_ENDPOINT = "http4://kayaposoft.com/enrico/json/v1.0/";
+  private final static String LIBRARY_COMMAND = "library(forecast);\n"
+      + "library(ggplot2);\n"
+      + "library(reshape);\n";
+  private final static String GRAPH_COMMAND = "HWplot <- function(ts_object,  n.ahead=4,  CI=.95,  error.ribbon='green', line.size=1){\n"
+      + "hw_object <- HoltWinters(ts_object);\n"
+      + "forecast <- predict(hw_object, n.ahead=n.ahead, prediction.interval=T, level=CI);\n"
+      + "for_values <- data.frame(time=round(time(forecast),  3),\n"
+      + " value_forecast=as.data.frame(forecast)$fit,  \n"
+      + " dev=as.data.frame(forecast)$upr-as.data.frame(forecast)$fit);\n"
+      + "fitted_values <- data.frame(time=round(time(hw_object$fitted),  3),\n"
+      + " value_fitted=as.data.frame(hw_object$fitted)$xhat);\n"
+      + "actual_values <- data.frame(time=round(time(hw_object$x), 3), Actual=c(hw_object$x));\n"
+      + "graphset <- merge(actual_values,  fitted_values,  by='time',  all=TRUE);\n"
+      + "graphset <- merge(graphset,  for_values,  all=TRUE,  by='time');\n"
+      + "graphset[is.na(graphset$dev),  ]$dev<-0;\n"
+      + "graphset$Fitted <- c(rep(NA,  NROW(graphset)-(NROW(for_values) + NROW(fitted_values))), \n"
+      + " fitted_values$value_fitted,  for_values$value_forecast);\n"
+      + "graphset.melt <- melt(graphset[, c('time', 'Actual', 'Fitted')], id='time');\n"
+      + "p <- ggplot(graphset.melt,  aes(x=time,  y=value)) + geom_ribbon(data=graphset, aes(x=time, y=Fitted, ymin=Fitted-dev,  ymax=Fitted + dev),  alpha=.2,  fill=error.ribbon) + geom_line(aes(colour=variable), size=line.size) + geom_vline(x=max(actual_values$time),  lty=2) + xlab('Time') + ylab('Value') + theme(legend.position='bottom') + scale_colour_hue('')\n"
+      + "return(p)\n"
+      + "}\n";
+  private final static String TIME_SERIES_COMMAND = "demand <- ts(sales, start=c(2011,1), frequency=12);\n";
+  private final static String PLOT_COMMAND = "graph <- HWplot(demand, n.ahead = 24, error.ribbon = \"red\");\n"
+      + "graph <- graph + ggtitle(\"A forecast example based on Holt-Winters\") + theme(plot.title = element_text(lineheight=.8, face=\"bold\"));\n"
+      + "graph <- graph + scale_x_continuous(breaks = seq(2011, 2015));\n"
+      + "graph <- graph + ylab(\"Demand (Pieces)\");"
+      + "plot(graph);\n";
+  private final static String DEVICE_COMMAND = "jpeg('${exchangeId}.jpg',quality=100);\n";
+  private final static String RETRIEVE_PLOT_COMMAND = "dev.off();r=readBin('${exchangeId}.jpg','raw',1024*1024); unlink('${exchangeId}.jpg'); r";
   private File basePath;
   private static final String DIRECT_CSV_SINK_URI = "direct://csv_sink";
   private static final String DIRECT_RCODE_SOURCE_URI = "direct://rcode_source";
@@ -69,9 +90,17 @@ public class RCodeRouteBuilder extends RouteBuilder {
    * generates an output graph.
    */
   private void configureRCodeRoute() {
+
     from(DIRECT_RCODE_SOURCE_URI)
-        .setBody(simple("quantity <- c(${body});\n" + FINAL_COMMAND))
-        .to("log://command?level=DEBUG")
+        .setBody(
+        simple(LIBRARY_COMMAND
+        + GRAPH_COMMAND
+        + "sales <- c(${body});\n"
+        + TIME_SERIES_COMMAND
+        + DEVICE_COMMAND
+        + PLOT_COMMAND
+        + RETRIEVE_PLOT_COMMAND))
+        .to("log://command?level=INFO")
         .to("rcode://localhost:6311/parse_and_eval?bufferSize=4194304")
         .to("log://r_output?level=INFO")
         .setBody(simple("${body.asBytes}"))
@@ -87,20 +116,11 @@ public class RCodeRouteBuilder extends RouteBuilder {
     final CsvDataFormat csv = new CsvDataFormat();
     csv.setDelimiter(";");
     csv.setSkipFirstLine(true);
-    // Route takes a CSV file, splits the body and reads the actual values
     from(basePath.toURI() + "?noop=TRUE")
         .log("Unmarshalling CSV file.")
         .unmarshal(csv)
         .to("log://CSV?level=DEBUG")
-        // TODO: Do some number crunching to get monthly sales/demand figures
         .process(new MonthlySalesFigureCalcProcessor())
-        //.setHeader("id", simple("${exchangeId}"))
-        //.split().body()
-        //.to("log://CSV?level=DEBUG")
-        //.setBody(simple("${body[1]}"))
-        //.to("log://CSV?level=DEBUG")
-        // Now we aggregate the retrived contents in a big string
-        //.aggregate(header("id"), new ConcatenateAggregationStrategy()).completionTimeout(3000)
         .to("log://CSV?level=INFO")
         .log(LoggingLevel.INFO, "Finished the unmarshaling")
         .to(DIRECT_CSV_SINK_URI)
