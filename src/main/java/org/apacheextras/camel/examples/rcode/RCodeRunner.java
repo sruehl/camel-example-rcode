@@ -22,15 +22,23 @@ import org.apache.camel.impl.DefaultCamelContext;
 import java.io.Console;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.cli.Options;
 
 /**
  *
  * @author cemmersb, Sebastian Rühl
  */
 public class RCodeRunner {
-
+  
   public static void main(String... args) throws Exception {
     CamelContext camelContext = new DefaultCamelContext();
+    
+    Options options = new Options();
+    options.addOption("target", true, "specified the output directory where the generated graph will be stored.");
+    options.addOption("source", false, "defines the source directory that contains the data directory.");
+    
+    //TODO: Finalize the commons-cli operations
+    
     File basePath = args.length > 0 ? new File(args[0]) : new File(System.getProperty("user.home") + "/data");
 
     camelContext.addRoutes(new RCodeRouteBuilder(basePath));
