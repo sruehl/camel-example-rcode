@@ -9,7 +9,7 @@ Please ensure, that the all requirements are fulfilled before running the demo.
 1. Make sure that you have setup the 'R' environment on the machine where you are running the demo.
 2. Ensure, that the 'Rserve' package is installed and the server component is started.
 3. Check if your machine is online and capable to access the Internet without any proxy configuration.
-4. Evauate if you have the following packages installed in your R environment via ```install.packages("$PACKAGE_NAME")```:
+4. Evaluate if you have the following packages installed in your R environment via ```install.packages("$PACKAGE_NAME")```:
 
 * forecast
 * ggplot2 and
