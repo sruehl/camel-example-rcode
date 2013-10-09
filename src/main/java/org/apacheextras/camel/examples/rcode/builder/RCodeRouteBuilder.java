@@ -19,7 +19,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
 
   private final static String LIBRARY_COMMAND = "library(forecast);\n"
       + "library(ggplot2);\n"
-      + "library(reshape);\n";
+      + "library(reshape2);\n";
   private final static String GRAPH_COMMAND = "HWplot <- function(ts_object,  n.ahead=4,  CI=.95,  error.ribbon='green', line.size=1){\n"
       + "hw_object <- HoltWinters(ts_object);\n"
       + "forecast <- predict(hw_object, n.ahead=n.ahead, prediction.interval=T, level=CI);\n"
