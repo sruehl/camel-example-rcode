@@ -40,14 +40,16 @@ public class RCodeRouteBuilder extends RouteBuilder {
     R_CODE_SOURCES.put("CMD_BINARY", sourceRCodeSources("cmd_Binary.R"));
   }
   
-  private File basePath;
+  private File source;
+  private File target;
   private static final String DIRECT_CSV_SINK_URI = "direct://csv_sink";
   private static final String DIRECT_RCODE_SOURCE_URI = "direct://rcode_source";
   private static final String DIRECT_GRAPH_FILE_SOURCE_URI = "seda://graph_file_source";
   private static final String DIRECT_GRAPH_JSON_SOURCE_URI = "seda://graph_json_source";
 
-  public RCodeRouteBuilder(File basePath) {
-    this.basePath = basePath;
+  public RCodeRouteBuilder(File source, File target) {
+    this.source = source;
+    this.target = target;
   }
   
   /**
@@ -99,7 +101,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
   private void configureGraphFileRoute() {
     from(DIRECT_GRAPH_FILE_SOURCE_URI)
         .setHeader(Exchange.FILE_NAME, simple("graph${exchangeId}.jpeg"))
-        .to("file://" + basePath.getParent() + "/output")
+        .to("file://" + target.getAbsolutePath())
         .log("Generated graph file: ${header.CamelFileNameProduced}")
         .end();
   }
@@ -135,7 +137,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
     final CsvDataFormat csv = new CsvDataFormat();
     csv.setDelimiter(";");
     csv.setSkipFirstLine(true);
-    from(basePath.toURI() + "?noop=TRUE")
+    from(source.getParent() + "?noop=TRUE")
         .log("Unmarshalling CSV file.")
         .unmarshal(csv)
         .to("log://CSV?level=DEBUG")

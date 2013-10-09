@@ -22,7 +22,13 @@ import org.apache.camel.impl.DefaultCamelContext;
 import java.io.Console;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.cli.BasicParser;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -30,18 +36,31 @@ import org.apache.commons.cli.Options;
  */
 public class RCodeRunner {
   
-  public static void main(String... args) throws Exception {
-    CamelContext camelContext = new DefaultCamelContext();
-    
+  private static final Logger LOGGER = LoggerFactory.getLogger(RCodeRunner.class);
+  
+  private static File source = new File(RCodeRunner.class.getResource("data/demand.csv").toString());
+  private static File target = new File(System.getProperty("user.home") + "/target");
+  
+  private static void parseCommandLine(String... args) throws ParseException {
     Options options = new Options();
     options.addOption("target", true, "specified the output directory where the generated graph will be stored.");
     options.addOption("source", false, "defines the source directory that contains the data directory.");
     
-    //TODO: Finalize the commons-cli operations
+    CommandLineParser parser = new BasicParser();
+    CommandLine commandLine = parser.parse(options, args);
     
-    File basePath = args.length > 0 ? new File(args[0]) : new File(System.getProperty("user.home") + "/data");
-
-    camelContext.addRoutes(new RCodeRouteBuilder(basePath));
+    if(commandLine.hasOption("target")) {
+      target = new File(commandLine.getOptionValue("target"));
+    }
+    
+    if(commandLine.hasOption("source")) {
+      source = new File(commandLine.getOptionValue("source"));
+    }
+  }
+  
+  public static void main(String... args) throws Exception {
+    CamelContext camelContext = new DefaultCamelContext();
+    camelContext.addRoutes(new RCodeRouteBuilder(source, target));
 
     camelContext.start();
     Console console = System.console();
