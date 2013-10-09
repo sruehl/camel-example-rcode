@@ -10,42 +10,36 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.dataformat.csv.CsvDataFormat;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.CharEncoding;
 import org.apacheextras.camel.examples.rcode.processor.MonthlySalesFigureCalcProcessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author cemmersb, Sebastian Rühl
  */
 public class RCodeRouteBuilder extends RouteBuilder {
-
-  private final static String LIBRARY_COMMAND = "library(forecast);\n"
-      + "library(ggplot2);\n"
-      + "library(reshape2);\n";
-  private final static String GRAPH_COMMAND = "HWplot <- function(ts_object,  n.ahead=4,  CI=.95,  error.ribbon='green', line.size=1){\n"
-      + "hw_object <- HoltWinters(ts_object);\n"
-      + "forecast <- predict(hw_object, n.ahead=n.ahead, prediction.interval=T, level=CI);\n"
-      + "for_values <- data.frame(time=round(time(forecast),  3),\n"
-      + " value_forecast=as.data.frame(forecast)$fit,  \n"
-      + " dev=as.data.frame(forecast)$upr-as.data.frame(forecast)$fit);\n"
-      + "fitted_values <- data.frame(time=round(time(hw_object$fitted),  3),\n"
-      + " value_fitted=as.data.frame(hw_object$fitted)$xhat);\n"
-      + "actual_values <- data.frame(time=round(time(hw_object$x), 3), Actual=c(hw_object$x));\n"
-      + "graphset <- merge(actual_values,  fitted_values,  by='time',  all=TRUE);\n"
-      + "graphset <- merge(graphset,  for_values,  all=TRUE,  by='time');\n"
-      + "graphset[is.na(graphset$dev),  ]$dev<-0;\n"
-      + "graphset$Fitted <- c(rep(NA,  NROW(graphset)-(NROW(for_values) + NROW(fitted_values))), \n"
-      + " fitted_values$value_fitted,  for_values$value_forecast);\n"
-      + "graphset.melt <- melt(graphset[, c('time', 'Actual', 'Fitted')], id='time');\n"
-      + "p <- ggplot(graphset.melt,  aes(x=time,  y=value)) + geom_ribbon(data=graphset, aes(x=time, y=Fitted, ymin=Fitted-dev,  ymax=Fitted + dev),  alpha=.2,  fill=error.ribbon) + geom_line(aes(colour=variable), size=line.size) + geom_vline(x=max(actual_values$time),  lty=2) + xlab('Time') + ylab('Value') + theme(legend.position='bottom') + scale_colour_hue('')\n"
-      + "return(p)\n"
-      + "}\n";
-  private final static String TIME_SERIES_COMMAND = "demand <- ts(sales, start=c(2011,1), frequency=12);\n";
-  private final static String PLOT_COMMAND = "graph <- HWplot(demand, n.ahead = 24, error.ribbon = \"red\");\n"
-      + "graph <- graph + ggtitle(\"A forecast example based on Holt-Winters\") + theme(plot.title = element_text(lineheight=.8, face=\"bold\"));\n"
-      + "graph <- graph + scale_x_continuous(breaks = seq(2011, 2015));\n"
-      + "graph <- graph + ylab(\"Demand (Pieces)\");"
-      + "plot(graph);\n";
-  private final static String DEVICE_COMMAND = "jpeg('${exchangeId}.jpg',quality=100);\n";
-  private final static String RETRIEVE_PLOT_COMMAND = "dev.off();r=readBin('${exchangeId}.jpg','raw',1024*1024); unlink('${exchangeId}.jpg'); r";
+  
+  /** Logger provides some degree of debugging information. */
+  private final static Logger LOGGER = LoggerFactory.getLogger(RCodeRouteBuilder.class);
+  
+  /** Map contains all the R code which has been loaded via external files. */
+  private final static Map<String, String> R_CODE_SOURCES = new HashMap<String, String>();
+  static {
+    R_CODE_SOURCES.put("FN_PLOT_HOLT_WINTERS_FORECAST", sourceRCodeSources("fn_PlotHoltWintersForecast.R"));
+    R_CODE_SOURCES.put("CMD_LIBRARIES", sourceRCodeSources("cmd_Libraries.R"));
+    R_CODE_SOURCES.put("CMD_TIME_SERIES", sourceRCodeSources("cmd_TimeSeries.R"));
+    R_CODE_SOURCES.put("CMD_DEVICE", sourceRCodeSources("cmd_Device.R"));
+    R_CODE_SOURCES.put("CMD_PLOT", sourceRCodeSources("cmd_Plot.R"));
+    R_CODE_SOURCES.put("CMD_BINARY", sourceRCodeSources("cmd_Binary.R"));
+  }
+  
   private File basePath;
   private static final String DIRECT_CSV_SINK_URI = "direct://csv_sink";
   private static final String DIRECT_RCODE_SOURCE_URI = "direct://rcode_source";
@@ -55,7 +49,32 @@ public class RCodeRouteBuilder extends RouteBuilder {
   public RCodeRouteBuilder(File basePath) {
     this.basePath = basePath;
   }
-
+  
+  /**
+   * Reads the R code sources based on the given source path within the class 
+   * path. Returns the result as String that can be further used within the 
+   * route.
+   * @param rCodeSource - String value of of the resource within the class loader
+   * @return read sources as String value
+   */
+  private static String sourceRCodeSources(String rCodeSource) {
+    // StringWriter to convert the InputStream to String
+    final StringWriter writer = new StringWriter();
+    
+    if(LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Try to source the following R Code snipped: {}", rCodeSource);
+    }
+    // Sourcing the external file and read the UTF-8 encoded String
+    try {
+      InputStream inputStream = RCodeRouteBuilder.class.getResourceAsStream(rCodeSource);
+      IOUtils.copy(inputStream, writer, CharEncoding.UTF_8);
+    } catch (IOException ex) {
+      LOGGER.error("Could not copy InputStream on to StringWriter: {}", ex);
+    }
+    // Return the R code sources
+    return writer.toString();
+  }
+  
   @Override
   public void configure() throws Exception {
     configureCsvRoute();
@@ -93,13 +112,13 @@ public class RCodeRouteBuilder extends RouteBuilder {
 
     from(DIRECT_RCODE_SOURCE_URI)
         .setBody(
-        simple(LIBRARY_COMMAND
-        + GRAPH_COMMAND
+        simple(R_CODE_SOURCES.get("CMD_LIBRARIES") + "\n"
+        + R_CODE_SOURCES.get("FN_PLOT_HOLT_WINTERS_FORECAST") + "\n"
         + "sales <- c(${body});\n"
-        + TIME_SERIES_COMMAND
-        + DEVICE_COMMAND
-        + PLOT_COMMAND
-        + RETRIEVE_PLOT_COMMAND))
+        + R_CODE_SOURCES.get("CMD_TIME_SERIES") + "\n"
+        + R_CODE_SOURCES.get("CMD_DEVICE") + "\n"
+        + R_CODE_SOURCES.get("CMD_PLOT") + "\n"
+        + R_CODE_SOURCES.get("CMD_BINARY") + "\n"))
         .to("log://command?level=INFO")
         .to("rcode://localhost:6311/parse_and_eval?bufferSize=4194304")
         .to("log://r_output?level=INFO")
