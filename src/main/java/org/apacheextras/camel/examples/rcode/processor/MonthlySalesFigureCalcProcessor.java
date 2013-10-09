@@ -7,6 +7,7 @@ package org.apacheextras.camel.examples.rcode.processor;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -26,16 +27,18 @@ public class MonthlySalesFigureCalcProcessor implements Processor {
 
   private final static Logger LOGGER = LoggerFactory.getLogger(MonthlySalesFigureCalcProcessor.class);
   public final Map<String, Map<String, String>> dailySalesCalendar =
-      new LinkedHashMap<String, Map<String, String>>();
+          new LinkedHashMap<String, Map<String, String>>();
 
   @Override
   public void process(Exchange exchng) throws Exception {
-    final List<ArrayList> salesDay = exchng.getIn().getBody(ArrayList.class);
-    for (List<String> salesDate : salesDay) {
+    final List<List> salesDay = exchng.getIn().getBody(ArrayList.class);
+    
+    for (List salesDate : salesDay) {
       LOGGER.debug("Sales date: {} and value: {}", salesDate.get(0), salesDate.get(1));
-      setSalesValue(getMonthAndYearOfDate(salesDate.get(0)), salesDate.get(0), salesDate.get(1));
+      setSalesValue(getMonthAndYearOfDate(salesDate.get(0).toString()), salesDate.get(0).toString(), salesDate.get(1).toString());
     }
-    String rVector = toRVector(summarizeMonthlyValues());
+        
+    final String rVector = toRVector(summarizeMonthlyValues());
     exchng.getIn().setBody(rVector);
   }
 
@@ -51,13 +54,13 @@ public class MonthlySalesFigureCalcProcessor implements Processor {
   }
 
   private int[] summarizeMonthlyValues() {
-    
+
     final Set<String> monthAndYears = dailySalesCalendar.keySet();
-    
+
     int[] sum = new int[monthAndYears.size()];
     int i = 0;
     for (String monthAndYear : monthAndYears) {
-      for(String value : dailySalesCalendar.get(monthAndYear).values()) {
+      for (String value : dailySalesCalendar.get(monthAndYear).values()) {
         sum[i] = sum[i] + Integer.parseInt(value);
       }
       i++;
