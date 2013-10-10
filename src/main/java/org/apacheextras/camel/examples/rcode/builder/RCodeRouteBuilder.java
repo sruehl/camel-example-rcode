@@ -161,7 +161,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
         .unmarshal(csv)
         .to("log://CSV?level=TRACE")
         // Call the processor to calculate the daily figures into monthly results
-        .process(new MonthlySalesFigureCalcProcessor())
+        .bean(MonthlySalesFigureCalcProcessor.class)
         .to("log://CSV?level=TRACE")
         .log(LoggingLevel.DEBUG, "Finished the unmarshaling")
         .to(DIRECT_CSV_SINK_URI)

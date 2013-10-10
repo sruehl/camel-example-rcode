@@ -22,38 +22,29 @@ import org.slf4j.LoggerFactory;
  *
  * @author cemmersb
  */
-public class MonthlySalesFigureCalcProcessor implements Processor {
+public class MonthlySalesFigureCalcProcessor {
 
   /**
    * Provides some level of logging information.
    */
   private final static Logger LOGGER = LoggerFactory.getLogger(MonthlySalesFigureCalcProcessor.class);
-  /**
-   * Hash Map containing all daily sales within a calendar layout.
-   */
-  public final Map<String, Map<String, String>> dailySalesCalendar =
-          new LinkedHashMap<String, Map<String, String>>();
 
   /**
    * {@inheritDoc}
    * <p>Executes the calculation of daily sales data into monthly values to run
    * the forecast</p>
    */
-  @Override
-  public void process(Exchange exchng) throws Exception {
-    // Retrieve the sales days from the exchange
-    final List<List> salesDay = exchng.getIn().getBody(ArrayList.class);
+  public String summarize(List<List> salesDay) {
+    Map<String, Map<String, String>> dailySalesCalendar = new LinkedHashMap<String, Map<String, String>>();
     
     // Get the sales data and convert it into an object where we can run the summary
     for (List salesDate : salesDay) {
       LOGGER.debug("Sales date: {} and value: {}", salesDate.get(0), salesDate.get(1));
-      setSalesValue(getMonthAndYearOfDate(salesDate.get(0).toString()), 
+      setSalesValue(dailySalesCalendar,getMonthAndYearOfDate(salesDate.get(0).toString()),
               salesDate.get(0).toString(), salesDate.get(1).toString());
     }
     // Create an R vector from the monthly sales values
-    final String rVector = toRVector(summarizeMonthlyValues());
-    // Set the r vector to the exchange for further processing
-    exchng.getIn().setBody(rVector);
+    return toRVector(summarizeMonthlyValues(dailySalesCalendar));
   }
   
   /**
@@ -76,7 +67,7 @@ public class MonthlySalesFigureCalcProcessor implements Processor {
   /**
    * Summarize all daily values by month
    */
-  private int[] summarizeMonthlyValues() {
+  private int[] summarizeMonthlyValues(Map<String, Map<String, String>> dailySalesCalendar) {
     final Set<String> monthAndYears = dailySalesCalendar.keySet();
     final int[] sum = new int[monthAndYears.size()];
     int i = 0;
@@ -92,7 +83,7 @@ public class MonthlySalesFigureCalcProcessor implements Processor {
   /**
    * Set's the sales value to the calendar layout.
    */
-  private void setSalesValue(String monthAndYear, String date, String value) throws Exception {
+  private void setSalesValue(Map<String, Map<String, String>> dailySalesCalendar,String monthAndYear, String date, String value) {
     if (null == dailySalesCalendar.get(monthAndYear)) {
       // Initialize the month if not available
       dailySalesCalendar.put(monthAndYear, new LinkedHashMap<String, String>());
