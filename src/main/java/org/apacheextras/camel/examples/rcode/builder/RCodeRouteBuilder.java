@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package org.apacheextras.camel.examples.rcode.builder;
 
 import org.apache.camel.Exchange;
@@ -40,11 +36,22 @@ public class RCodeRouteBuilder extends RouteBuilder {
     R_CODE_SOURCES.put("CMD_BINARY", sourceRCodeSources("cmd_Binary.R"));
   }
   
+  /** Source file containing the data to be forecasted. */
   private File source;
+  
+  /** Target directory the result will be written to. */
   private File target;
+  
+  /** Camel endpoint where the CSV result will be written to. */
   private static final String DIRECT_CSV_SINK_URI = "direct://csv_sink";
+  
+  /** Camel endpoint that starts the R-Code processing. */
   private static final String DIRECT_RCODE_SOURCE_URI = "direct://rcode_source";
+  
+  /** Camel endpoint that starts writing the output as binary file. */
   private static final String DIRECT_GRAPH_FILE_SOURCE_URI = "seda://graph_file_source";
+  
+  /** Camel endpoint that writes the result as JSON formated file. */
   private static final String DIRECT_GRAPH_JSON_SOURCE_URI = "seda://graph_json_source";
 
   public RCodeRouteBuilder(File source, File target) {
@@ -77,6 +84,12 @@ public class RCodeRouteBuilder extends RouteBuilder {
     return writer.toString();
   }
   
+  /**
+   * {@inheritDoc}
+   * <p>
+   * Configures all routes required for the RCode demo.
+   * </p>
+   */
   @Override
   public void configure() throws Exception {
     configureCsvRoute();
@@ -85,24 +98,26 @@ public class RCodeRouteBuilder extends RouteBuilder {
     configureGraphJsonRoute();
     wireRoutes();
   }
-
+  
+  /** 
+   * Takes an input as bytes and writes it as JSON formatted file.
+   */
   private void configureGraphJsonRoute() {
     // TODO: Export the binary file in a JSON rendert object and write to output folder
     from(DIRECT_GRAPH_JSON_SOURCE_URI)
         // TODO: missing JSON conversion implementation
-        //.to("log://graph_json?level=INFO"); // prints currently some awkward byte code
-        .log("JSON graph generated")
+        .to("log://json?level=DEBUG")
         .end();
   }
 
   /**
-   * Takes an input as bytes and writes it as an jpeg file.
+   * Takes an input as bytes and writes it as an JPEG file.
    */
   private void configureGraphFileRoute() {
     from(DIRECT_GRAPH_FILE_SOURCE_URI)
         .setHeader(Exchange.FILE_NAME, simple("graph${exchangeId}.jpeg"))
         .to("file://" + target.getAbsolutePath())
-        .log("Generated graph file: ${header.CamelFileNameProduced}")
+        .log("Generated graph file: '${header.CamelFileNameProduced}'")
         .end();
   }
 
@@ -113,17 +128,21 @@ public class RCodeRouteBuilder extends RouteBuilder {
   private void configureRCodeRoute() {
 
     from(DIRECT_RCODE_SOURCE_URI)
-        .setBody(
-        simple(R_CODE_SOURCES.get("CMD_LIBRARIES") + "\n"
+        .log(LoggingLevel.DEBUG, "Executing R command.")
+        // Create the R Command via simple language and String concatenation
+        .setBody(simple(R_CODE_SOURCES.get("CMD_LIBRARIES") + "\n"
         + R_CODE_SOURCES.get("FN_PLOT_HOLT_WINTERS_FORECAST") + "\n"
         + "sales <- c(${body});\n"
         + R_CODE_SOURCES.get("CMD_TIME_SERIES") + "\n"
         + R_CODE_SOURCES.get("CMD_DEVICE") + "\n"
         + R_CODE_SOURCES.get("CMD_PLOT") + "\n"
         + R_CODE_SOURCES.get("CMD_BINARY") + "\n"))
-        .to("log://command?level=INFO")
+        // Logs the R command in debug mode
+        .to("log://command?level=TRACE")
+        // Send the R command to Rserve
         .to("rcode://localhost:6311/parse_and_eval?bufferSize=4194304")
-        .to("log://r_output?level=INFO")
+        .to("log://r_output?level=TRACE")
+        // Convert the generated JPEG as bytes to byte code
         .setBody(simple("${body.asBytes}"))
         .end();
   }
@@ -138,18 +157,19 @@ public class RCodeRouteBuilder extends RouteBuilder {
     csv.setDelimiter(";");
     csv.setSkipFirstLine(true);
     from("file://" + source.getPath() + "?noop=TRUE")
-        .log("Unmarshalling CSV file.")
+        .log(LoggingLevel.DEBUG, "Unmarshalling CSV file.")
         .unmarshal(csv)
-        .to("log://CSV?level=DEBUG")
+        .to("log://CSV?level=TRACE")
+        // Call the processor to calculate the daily figures into monthly results
         .process(new MonthlySalesFigureCalcProcessor())
-        .to("log://CSV?level=INFO")
-        .log(LoggingLevel.INFO, "Finished the unmarshaling")
+        .to("log://CSV?level=TRACE")
+        .log(LoggingLevel.DEBUG, "Finished the unmarshaling")
         .to(DIRECT_CSV_SINK_URI)
         .end();
   }
 
   /**
-   * Wires together the routes.
+   * Wires the routes together.
    */
   private void wireRoutes() {
     from(DIRECT_CSV_SINK_URI)
