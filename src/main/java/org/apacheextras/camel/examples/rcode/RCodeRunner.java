@@ -76,34 +76,40 @@ public class RCodeRunner {
     // Initialize a basic parser
     final CommandLineParser parser = new BasicParser();
     // Parse options from command line
-    
+
+    CommandLine commandLine;
     try {
-      CommandLine commandLine = parser.parse(options, args);
-      if (commandLine.hasOption("help")) {
-        showHelp(options);
-        return false;
-      }
-      // If source has not been specified or is null show options, otherwise process the option
-      if(!commandLine.hasOption("source") || null == commandLine.getOptionValue("source")) {
-        showHelp(options);
-      } else if (commandLine.hasOption("source")) {
-        LOGGER.debug("Command line option is: {}", commandLine.getOptionValue("source"));
-        source = new File(commandLine.getOptionValue("source"));
-      }
-      // If target has not been specified or is null show options, otherwise process the option
-      if(!commandLine.hasOption("target") || null == commandLine.getOptionValue("target")) {
-        showHelp(options);
-      } else if (commandLine.hasOption("target")) {
-        LOGGER.debug("Command line option is: {}", commandLine.getOptionValue("target"));
-        target = new File(commandLine.getOptionValue("target"));
-      }
-      return true;
+      commandLine = parser.parse(options, args);
       // Catch any parse exception and show the help
     } catch (ParseException ex) {
       LOGGER.error("Could not parse the specified options!");
       showHelp(options);
       return false;
     }
+
+    if (commandLine.hasOption("help")) {
+      showHelp(options);
+      return false;
+    }
+    // If source has not been specified or is null show options, otherwise process the option
+    if(!commandLine.hasOption("source") || null == commandLine.getOptionValue("source")) {
+      showHelp(options);
+      return false;
+    }
+    if (commandLine.hasOption("source")) {
+      LOGGER.debug("Command line option is: {}", commandLine.getOptionValue("source"));
+      source = new File(commandLine.getOptionValue("source"));
+    }
+    // If target has not been specified or is null show options, otherwise process the option
+    if(!commandLine.hasOption("target") || null == commandLine.getOptionValue("target")) {
+      showHelp(options);
+      return false;
+    }
+    if (commandLine.hasOption("target")) {
+      LOGGER.debug("Command line option is: {}", commandLine.getOptionValue("target"));
+      target = new File(commandLine.getOptionValue("target"));
+    }
+    return true;
   }
   
   
