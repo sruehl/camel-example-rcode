@@ -49,9 +49,9 @@ public class RCodeRunner {
    */
   private static Options createOptions() {
     final Options options = new Options();
-    options.addOption("help", false, "provides a list of availble command options.");
-    options.addOption("target", true, "specified the output directory where the generated graph will be stored.");
-    options.addOption("source", true, "defines the source directory that contains the data directory.");
+    options.addOption("h","help", false, "provides a list of availble command options.");
+    options.addOption("t","target", true, "specified the output directory where the generated graph will be stored.");
+    options.addOption("s","source", true, "defines the source directory that contains the data directory.");
     return options;
   }
   
