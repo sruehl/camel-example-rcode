@@ -132,9 +132,6 @@ public class MonthlySalesFigureCalcProcessor implements Processor {
       LOGGER.error("Could not parse the given date: {}", ex);
     }
     // Return month and day as string objects
-    final String monthAndYear = new StringBuilder()
-            .append(year).append('-')
-            .append(month).toString();
-    return monthAndYear;
+    return String.valueOf(year) + '-' + month;
   }
 }

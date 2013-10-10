@@ -22,10 +22,10 @@ import org.slf4j.LoggerFactory;
  * @author cemmersb, Sebastian Rühl
  */
 public class RCodeRouteBuilder extends RouteBuilder {
-  
+
   /** Logger provides some degree of debugging information. */
   private final static Logger LOGGER = LoggerFactory.getLogger(RCodeRouteBuilder.class);
-  
+
   /** Map contains all the R code which has been loaded via external files. */
   private final static Map<String, String> R_CODE_SOURCES = new HashMap<String, String>();
   static {
@@ -36,22 +36,22 @@ public class RCodeRouteBuilder extends RouteBuilder {
     R_CODE_SOURCES.put("CMD_PLOT", sourceRCodeSources("cmd_Plot.R"));
     R_CODE_SOURCES.put("CMD_BINARY", sourceRCodeSources("cmd_Binary.R"));
   }
-  
+
   /** Source file containing the data to be forecasted. */
   private File source;
-  
+
   /** Target directory the result will be written to. */
   private File target;
-  
+
   /** Camel endpoint where the CSV result will be written to. */
   private static final String DIRECT_CSV_SINK_URI = "direct://csv_sink";
-  
+
   /** Camel endpoint that starts the R-Code processing. */
   private static final String DIRECT_RCODE_SOURCE_URI = "direct://rcode_source";
-  
+
   /** Camel endpoint that starts writing the output as binary file. */
   private static final String DIRECT_GRAPH_FILE_SOURCE_URI = "seda://graph_file_source";
-  
+
   /** Camel endpoint that writes the result as JSON formated file. */
   private static final String DIRECT_GRAPH_JSON_SOURCE_URI = "seda://graph_json_source";
 
@@ -59,10 +59,10 @@ public class RCodeRouteBuilder extends RouteBuilder {
     this.source = source;
     this.target = target;
   }
-  
+
   /**
-   * Reads the R code sources based on the given source path within the class 
-   * path. Returns the result as String that can be further used within the 
+   * Reads the R code sources based on the given source path within the class
+   * path. Returns the result as String that can be further used within the
    * route.
    * @param rCodeSource - String value of of the resource within the class loader
    * @return read sources as String value
@@ -70,10 +70,8 @@ public class RCodeRouteBuilder extends RouteBuilder {
   private static String sourceRCodeSources(String rCodeSource) {
     // StringWriter to convert the InputStream to String
     final StringWriter writer = new StringWriter();
-    
-    if(LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Try to source the following R Code snipped: {}", rCodeSource);
-    }
+
+    LOGGER.debug("Try to source the following R Code snipped: {}", rCodeSource);
     // Sourcing the external file and read the UTF-8 encoded String
     try {
       InputStream inputStream = RCodeRouteBuilder.class.getResourceAsStream(rCodeSource);
@@ -84,7 +82,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
     // Return the R code sources
     return writer.toString();
   }
-  
+
   /**
    * {@inheritDoc}
    * <p>
@@ -99,8 +97,8 @@ public class RCodeRouteBuilder extends RouteBuilder {
     configureGraphJsonRoute();
     wireRoutes();
   }
-  
-  /** 
+
+  /**
    * Takes an input as bytes and writes it as JSON formatted file.
    */
   private void configureGraphJsonRoute() {
