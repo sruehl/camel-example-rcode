@@ -19,12 +19,12 @@ import org.apacheextras.camel.examples.rcode.builder.RCodeRouteBuilder;
 import org.apache.camel.CamelContext;
 import org.apache.camel.impl.DefaultCamelContext;
 
-import java.io.Console;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
@@ -35,41 +35,99 @@ import org.slf4j.LoggerFactory;
  * @author cemmersb, Sebastian Rühl
  */
 public class RCodeRunner {
-  
+
+  /** Provides some basic output. */
   private static final Logger LOGGER = LoggerFactory.getLogger(RCodeRunner.class);
-  
-  private static File source = new File(RCodeRunner.class.getResource("data/demand.csv").toString());
+  /** Default file that points to the source directory . */
+  private static File source = new File(RCodeRunner.class.getResource("data/").toString());
+  /** Default file that points the user home target directory. */
   private static File target = new File(System.getProperty("user.home") + "/target");
-  
-  private static void parseCommandLine(String... args) throws ParseException {
-    Options options = new Options();
+
+  /**
+   * Create a set of options that configures the Camel Routes
+   */
+  private static Options createOptions() {
+    final Options options = new Options();
+    options.addOption("help", false, "provides a list of availble command options.");
     options.addOption("target", true, "specified the output directory where the generated graph will be stored.");
-    options.addOption("source", false, "defines the source directory that contains the data directory.");
+    options.addOption("source", true, "defines the source directory that contains the data directory.");
+    return options;
+  }
+  
+  /**
+   * Shows all commands in a formatted way to provide some guidance for specifying
+   * the correct options.
+   */
+  private static void showHelp(Options options) {
+    final HelpFormatter formatter = new HelpFormatter();
+    formatter.printHelp("help", options);
+    System.exit(0);
+  }
+  
+  /**
+   * Takes the argument String from the command line and parses according to the
+   * specified parameter.
+   * If any parameter is not specified correctly, the parser defaults to show the
+   * help as output.
+   */
+  private static void parseCommandLine(String... args) {
+    // Create the options
+    final Options options = createOptions();
+    // Initialize a basic parser
+    final CommandLineParser parser = new BasicParser();
+    // Parse options from command line
     
-    CommandLineParser parser = new BasicParser();
-    CommandLine commandLine = parser.parse(options, args);
-    
-    if(commandLine.hasOption("target")) {
-      target = new File(commandLine.getOptionValue("target"));
-    }
-    
-    if(commandLine.hasOption("source")) {
-      source = new File(commandLine.getOptionValue("source"));
+    try {
+      CommandLine commandLine = parser.parse(options, args);
+      if (commandLine.hasOption("help")) {
+        showHelp(options);
+      } else {
+        // If source has not been specified or is null show options, otherwise process the option
+        if(!commandLine.hasOption("source") || null == commandLine.getOptionValue("source")) {
+          showHelp(options);
+        } else if (commandLine.hasOption("source")) {
+          LOGGER.debug("Command line option is: {}", commandLine.getOptionValue("source"));
+          source = new File(commandLine.getOptionValue("source"));
+        }
+        // If target has not been specified or is null show options, otherwise process the option
+        if(!commandLine.hasOption("target") || null == commandLine.getOptionValue("target")) {
+          showHelp(options);
+        } else if (commandLine.hasOption("target")) {
+          LOGGER.debug("Command line option is: {}", commandLine.getOptionValue("target"));
+          target = new File(commandLine.getOptionValue("target"));
+        }
+      }
+      // Catch any parse exception and show the help
+    } catch (ParseException ex) {
+      LOGGER.error("Could not parse the specified options!");
+      showHelp(options);
     }
   }
   
+  
+  /**
+   * Kicks of the main project to run an integration of Apache Camel and RCode.
+   * Accepted parameters are:
+   * <ul>
+   * <li><code>-help</code>: provides a list of available command options.</li>
+   * <li><code>-source &lt;arg&gt;</code>: defines the source directory that contains the data directory.</li>
+   * <li><code>-target &lt;arg&gt;</code>: specified the output directory where the generated graph will be stored.</li>
+   * </ul>
+   * An example for an acceptable command is:<br>
+   * <code>java -jar camel-example-rcode-${VERSION}.jar -source /${PATH}/${TO}/${SOURCE} -target /${PATH}/${TO}/${TARGET}</code>
+   * 
+   */
   public static void main(String... args) throws Exception {
+    // Parse the command line arguments
+    parseCommandLine(args);
+    // Start the camel context
     CamelContext camelContext = new DefaultCamelContext();
     camelContext.addRoutes(new RCodeRouteBuilder(source, target));
-
     camelContext.start();
-    Console console = System.console();
-    if (console != null) {
-      console.printf("Please press enter to shutdown route.");
-      console.readLine();
-    } else {
-      TimeUnit.SECONDS.sleep(30);
-    }
+    // Give Camel some time to process the data
+    LOGGER.info("Waiting to finish the route calculation.");
+    TimeUnit.SECONDS.sleep(10);
+    // Shutdown the camel context
     camelContext.stop();
   }
 }

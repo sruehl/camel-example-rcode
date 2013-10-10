@@ -137,7 +137,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
     final CsvDataFormat csv = new CsvDataFormat();
     csv.setDelimiter(";");
     csv.setSkipFirstLine(true);
-    from(source.getParent() + "?noop=TRUE")
+    from("file://" + source.getPath() + "?noop=TRUE")
         .log("Unmarshalling CSV file.")
         .unmarshal(csv)
         .to("log://CSV?level=DEBUG")
