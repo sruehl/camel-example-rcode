@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.CharEncoding;
 import org.apacheextras.camel.examples.rcode.processor.MonthlySalesFigureCalcProcessor;
@@ -106,7 +107,8 @@ public class RCodeRouteBuilder extends RouteBuilder {
     // TODO: Export the binary file in a JSON rendert object and write to output folder
     from(DIRECT_GRAPH_JSON_SOURCE_URI)
         // TODO: missing JSON conversion implementation
-        .to("log://json?level=DEBUG")
+        .marshal().json(JsonLibrary.Gson)
+        .to("log://json?level=INFO")
         .end();
   }
 
