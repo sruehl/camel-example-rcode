@@ -1,7 +1,6 @@
 package org.apacheextras.camel.examples.rcode.builder;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.dataformat.csv.CsvDataFormat;
 
