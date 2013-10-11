@@ -9,13 +9,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.CharEncoding;
-import org.apacheextras.camel.examples.rcode.processor.MonthlySalesFigureCalcProcessor;
+import org.apacheextras.camel.examples.rcode.bean.MonthlySalesFigureCalculator;
 import org.apacheextras.camel.examples.rcode.types.ForecastDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -185,7 +184,7 @@ public class RCodeRouteBuilder extends RouteBuilder {
             .unmarshal(csv)
             .to("log://CSV?level=TRACE")
             // Call the processor to calculate the daily figures into monthly results
-            .bean(MonthlySalesFigureCalcProcessor.class)
+            .bean(MonthlySalesFigureCalculator.class)
             .to("log://CSV?level=TRACE")
             .log(LoggingLevel.DEBUG, "Finished the unmarshaling")
             .to(DIRECT_CSV_SINK_URI)

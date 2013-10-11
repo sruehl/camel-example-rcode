@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.apacheextras.camel.examples.rcode.processor;
+package org.apacheextras.camel.examples.rcode.bean;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -19,12 +19,12 @@ import org.slf4j.LoggerFactory;
  *
  * @author cemmersb
  */
-public class MonthlySalesFigureCalcProcessor {
+public class MonthlySalesFigureCalculator {
 
   /**
    * Provides some level of logging information.
    */
-  private final static Logger LOGGER = LoggerFactory.getLogger(MonthlySalesFigureCalcProcessor.class);
+  private final static Logger LOGGER = LoggerFactory.getLogger(MonthlySalesFigureCalculator.class);
 
   /**
    * {@inheritDoc}
