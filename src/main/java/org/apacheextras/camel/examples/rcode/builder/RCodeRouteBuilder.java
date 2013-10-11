@@ -55,6 +55,11 @@ public class RCodeRouteBuilder extends RouteBuilder {
   /** Camel endpoint that writes the result as JSON formated file. */
   private static final String DIRECT_GRAPH_JSON_SOURCE_URI = "seda://graph_json_source";
 
+  /**
+   * Creates the routes by taking a source and a target file.
+   * @param source directory to read the CSV
+   * @param target directory to write the JPEG
+   */
   public RCodeRouteBuilder(File source, File target) {
     this.source = source;
     this.target = target;
