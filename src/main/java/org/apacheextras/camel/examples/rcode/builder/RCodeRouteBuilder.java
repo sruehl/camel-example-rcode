@@ -151,7 +151,6 @@ public class RCodeRouteBuilder extends RouteBuilder {
   private void configureRCodeRoute() {
 
     from(DIRECT_RCODE_SOURCE_URI)
-            .log(LoggingLevel.DEBUG, "Executing R command.")
             // Create the R Command via simple language and String concatenation
             .setBody(simple(R_CODE_SOURCES.get("CMD_LIBRARIES") + "\n"
             + R_CODE_SOURCES.get("FN_PLOT_HOLT_WINTERS_FORECAST") + "\n"
@@ -161,10 +160,8 @@ public class RCodeRouteBuilder extends RouteBuilder {
             + R_CODE_SOURCES.get("CMD_PLOT") + "\n"
             + R_CODE_SOURCES.get("CMD_BINARY") + "\n"))
             // Logs the R command in debug mode
-            .to("log://command?level=TRACE")
             // Send the R command to Rserve
             .to("rcode://localhost:6311/parse_and_eval?bufferSize=4194304")
-            .to("log://r_output?level=TRACE")
             // Convert the generated JPEG as bytes to byte code
             .setBody(simple("${body.asBytes}"))
             .end();
@@ -180,13 +177,9 @@ public class RCodeRouteBuilder extends RouteBuilder {
     csv.setDelimiter(";");
     csv.setSkipFirstLine(true);
     from("file://" + source.getPath() + "?noop=TRUE")
-            .log(LoggingLevel.DEBUG, "Unmarshalling CSV file.")
             .unmarshal(csv)
-            .to("log://CSV?level=TRACE")
             // Call the processor to calculate the daily figures into monthly results
             .bean(MonthlySalesFigureCalculator.class)
-            .to("log://CSV?level=TRACE")
-            .log(LoggingLevel.DEBUG, "Finished the unmarshaling")
             .to(DIRECT_CSV_SINK_URI)
             .end();
   }
