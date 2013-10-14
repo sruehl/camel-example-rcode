@@ -8,8 +8,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.camel.Processor;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.CharEncoding;
@@ -122,13 +124,21 @@ public class RCodeRouteBuilder extends RouteBuilder {
   private void configureGraphJsonRoute() {
     from(DIRECT_GRAPH_JSON_SOURCE_URI)
             .convertBodyTo(ForecastDocument.class)
-            // TODO: Add title to forecast document
-            // TODO: Add path to forecast document
-            // TODO: Add date to forecast document
+            .setHeader(Exchange.FILE_NAME, simple("graph${exchangeId}.json"))
+            .process(new Processor() {
+              @Override
+              public void process(Exchange exchng) throws Exception {
+                ForecastDocument document = exchng.getIn().getBody(ForecastDocument.class);
+                document.setTitle("Holt-Winters Forecast: " 
+                        + exchng.getIn().getHeader(Exchange.FILE_NAME));
+                document.setDate(new Date());
+                document.setPath(target.getAbsolutePath() + '/' 
+                        + exchng.getIn().getHeader(Exchange.FILE_NAME));
+              }
+            })
             .marshal().json(JsonLibrary.Gson)
-            // TODO: Modify log level to debug
-            .to("log://json?level=INFO")
-            // TODO: Write file to target (same name as jpeg, just ending with *.json)
+            .to("file://" + target.getAbsolutePath())
+            .log("Generated JSON file: '${header.CamelFileNameProduced}'")
             .end();
   }
 
