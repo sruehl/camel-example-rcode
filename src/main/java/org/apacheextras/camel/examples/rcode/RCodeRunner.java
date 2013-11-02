@@ -15,6 +15,7 @@
  */
 package org.apacheextras.camel.examples.rcode;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apacheextras.camel.examples.rcode.builder.RCodeRouteBuilder;
 import org.apache.camel.CamelContext;
 import org.apache.camel.impl.DefaultCamelContext;
@@ -27,18 +28,15 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The Commandline tool for starting up the {@link RCodeRouteBuilder}.
  *
  * @author cemmersb, Sebastian Rühl
  */
+@Slf4j
 public class RCodeRunner {
 
-  /** Provides some basic output. */
-  private static final Logger LOGGER = LoggerFactory.getLogger(RCodeRunner.class);
   /** Default file that points to the source directory . */
   private static File source = new File(RCodeRunner.class.getResource("data/").toString());
   /** Default file that points the user home target directory. */
@@ -78,7 +76,7 @@ public class RCodeRunner {
       commandLine = parser.parse(options, args);
       // Catch any parse exception and show the help
     } catch (ParseException ex) {
-      LOGGER.error("Could not parse the specified options!");
+      log.error("Could not parse the specified options!");
       showHelp(options);
       return false;
     }
@@ -93,7 +91,7 @@ public class RCodeRunner {
       return false;
     }
     if (commandLine.hasOption("source")) {
-      LOGGER.debug("Command line option is: {}", commandLine.getOptionValue("source"));
+      log.debug("Command line option is: {}", commandLine.getOptionValue("source"));
       source = new File(commandLine.getOptionValue("source"));
     }
     // If target has not been specified or is null show options, otherwise process the option
@@ -102,7 +100,7 @@ public class RCodeRunner {
       return false;
     }
     if (commandLine.hasOption("target")) {
-      LOGGER.debug("Command line option is: {}", commandLine.getOptionValue("target"));
+      log.debug("Command line option is: {}", commandLine.getOptionValue("target"));
       target = new File(commandLine.getOptionValue("target"));
     }
     return true;
@@ -131,7 +129,7 @@ public class RCodeRunner {
     camelContext.addRoutes(new RCodeRouteBuilder(source, target));
     camelContext.start();
     // Give Camel some time to process the data
-    LOGGER.info("Waiting to finish the route calculation.");
+    log.info("Waiting to finish the route calculation.");
     TimeUnit.SECONDS.sleep(10);
     // Shutdown the camel context
     camelContext.stop();

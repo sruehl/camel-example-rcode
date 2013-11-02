@@ -1,5 +1,6 @@
 package org.apacheextras.camel.examples.rcode.builder;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.dataformat.csv.CsvDataFormat;
@@ -17,18 +18,13 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.CharEncoding;
 import org.apacheextras.camel.examples.rcode.bean.MonthlySalesFigureCalculator;
 import org.apacheextras.camel.examples.rcode.types.ForecastDocument;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author cemmersb, Sebastian Rühl
  */
+@Slf4j
 public class RCodeRouteBuilder extends RouteBuilder {
 
-  /**
-   * Logger provides some degree of debugging information.
-   */
-  private final static Logger LOGGER = LoggerFactory.getLogger(RCodeRouteBuilder.class);
   /**
    * Map contains all the R code which has been loaded via external files.
    */
@@ -88,14 +84,14 @@ public class RCodeRouteBuilder extends RouteBuilder {
    * @return read sources as String value
    */
   private static String sourceRCodeSources(String rCodeSource) {
-    LOGGER.debug("Try to source the following R Code snipped: {}", rCodeSource);
+    log.debug("Try to source the following R Code snipped: {}", rCodeSource);
     // Sourcing the external file and read the UTF-8 encoded String
     try {
       InputStream inputStream = RCodeRouteBuilder.class.getResourceAsStream(rCodeSource);
       // Return the R code sources
       return  IOUtils.toString(inputStream, CharEncoding.UTF_8);
     } catch (IOException ex) {
-      LOGGER.error("Could not copy InputStream on to StringWriter: {}", ex);
+      log.error("Could not copy InputStream on to StringWriter: {}", ex);
       return null;
     }
   }

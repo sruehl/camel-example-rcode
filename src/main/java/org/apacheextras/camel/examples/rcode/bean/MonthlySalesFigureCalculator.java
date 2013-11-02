@@ -12,19 +12,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *
  * @author cemmersb
  */
+@Slf4j
 public class MonthlySalesFigureCalculator {
-
-  /**
-   * Provides some level of logging information.
-   */
-  private final static Logger LOGGER = LoggerFactory.getLogger(MonthlySalesFigureCalculator.class);
 
   /**
    * {@inheritDoc}
@@ -36,7 +32,7 @@ public class MonthlySalesFigureCalculator {
     
     // Get the sales data and convert it into an object where we can run the summary
     for (List salesDate : salesDay) {
-      LOGGER.debug("Sales date: {} and value: {}", salesDate.get(0), salesDate.get(1));
+      log.debug("Sales date: {} and value: {}", salesDate.get(0), salesDate.get(1));
       setSalesValue(dailySalesCalendar,getMonthAndYearOfDate(salesDate.get(0).toString()),
               salesDate.get(0).toString(), salesDate.get(1).toString());
     }
@@ -99,7 +95,7 @@ public class MonthlySalesFigureCalculator {
    * a sum calculation on every month per year
    */
   private String getMonthAndYearOfDate(String strDate) {
-    LOGGER.trace("Mapping date '{}' to the apropriate month.", strDate);
+    log.trace("Mapping date '{}' to the apropriate month.", strDate);
     // Format the dates
     final SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
     // Get calendar instance
@@ -117,7 +113,7 @@ public class MonthlySalesFigureCalculator {
       month = cal.get(Calendar.MONTH);
       year = cal.get(Calendar.YEAR);
     } catch (ParseException ex) {
-      LOGGER.error("Could not parse the given date: {}", ex);
+      log.error("Could not parse the given date: {}", ex);
     }
     // Return month and day as string objects
     return String.valueOf(year) + '-' + month;
