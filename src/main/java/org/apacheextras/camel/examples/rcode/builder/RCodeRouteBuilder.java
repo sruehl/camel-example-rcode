@@ -88,19 +88,16 @@ public class RCodeRouteBuilder extends RouteBuilder {
    * @return read sources as String value
    */
   private static String sourceRCodeSources(String rCodeSource) {
-    // StringWriter to convert the InputStream to String
-    final StringWriter writer = new StringWriter();
-
     LOGGER.debug("Try to source the following R Code snipped: {}", rCodeSource);
     // Sourcing the external file and read the UTF-8 encoded String
     try {
       InputStream inputStream = RCodeRouteBuilder.class.getResourceAsStream(rCodeSource);
-      IOUtils.copy(inputStream, writer, CharEncoding.UTF_8);
+      // Return the R code sources
+      return  IOUtils.toString(inputStream, CharEncoding.UTF_8);
     } catch (IOException ex) {
       LOGGER.error("Could not copy InputStream on to StringWriter: {}", ex);
+      return null;
     }
-    // Return the R code sources
-    return writer.toString();
   }
 
   /**
