@@ -44,15 +44,13 @@ public class RCodeRunner {
   /** Default file that points the user home target directory. */
   private static File target = new File(System.getProperty("user.home") + "/target");
 
-  /**
-   * Create a set of options that configures the Camel Routes
-   */
-  private static Options createOptions() {
-    final Options options = new Options();
+  /** A set of options that configures the Camel Routes */
+  private static Options options;
+  static  {
+    options = new Options();
     options.addOption("h","help", false, "provides a list of availble command options.");
     options.addOption("t","target", true, "specified the output directory where the generated graph will be stored.");
     options.addOption("s","source", true, "defines the source directory that contains the data directory.");
-    return options;
   }
   
   /**
@@ -71,8 +69,6 @@ public class RCodeRunner {
    * help as output.
    */
   private static boolean parseCommandLine(String... args) {
-    // Create the options
-    final Options options = createOptions();
     // Initialize a basic parser
     final CommandLineParser parser = new BasicParser();
     // Parse options from command line
